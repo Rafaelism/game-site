@@ -1,1 +1,762 @@
-# game-site
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DRIFTLINE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root{
+    --void:#0a0a12;
+    --grid:#15152a;
+    --cyan:#00f0ff;
+    --magenta:#ff2e92;
+    --amber:#ffc233;
+    --ghost:#f2f2f7;
+    --danger:#ff3b4e;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html, body{
+    width:100%; height:100%;
+    background:var(--void);
+    overflow:hidden;
+    font-family:'Inter', sans-serif;
+    color:var(--ghost);
+    -webkit-user-select:none; user-select:none;
+    touch-action:none;
+  }
+
+  #game{
+    position:fixed; inset:0;
+    display:block;
+    cursor:crosshair;
+  }
+
+  .overlay{
+    position:fixed; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:22px;
+    text-align:center;
+    padding:24px;
+    background:radial-gradient(ellipse at 50% 40%, rgba(21,21,42,0.55), rgba(10,10,18,0.92) 70%);
+    z-index:10;
+    animation:fadeIn .5s ease;
+  }
+  @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+  .hidden{ display:none; }
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.35em;
+    text-transform:uppercase;
+    color:var(--cyan);
+    opacity:0.85;
+  }
+
+  .title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(42px, 10vw, 84px);
+    line-height:0.95;
+    letter-spacing:-0.01em;
+    background:linear-gradient(120deg, var(--ghost) 20%, var(--cyan) 55%, var(--magenta) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    text-shadow:0 0 60px rgba(0,240,255,0.15);
+  }
+
+  .subtitle{
+    max-width:480px;
+    font-size:15px;
+    line-height:1.6;
+    color:#b9b9c9;
+  }
+
+  .rules{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:center;
+    max-width:520px;
+    margin-top:4px;
+  }
+  .pill{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    padding:8px 14px;
+    border-radius:100px;
+    border:1px solid rgba(255,255,255,0.12);
+    background:rgba(255,255,255,0.03);
+    color:#d6d6e2;
+    display:flex; align-items:center; gap:8px;
+  }
+  .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+  .btn{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:0.02em;
+    padding:15px 38px;
+    margin-top:8px;
+    border-radius:100px;
+    border:none;
+    background:linear-gradient(120deg, var(--cyan), #6ad0ff);
+    color:#04121a;
+    cursor:pointer;
+    box-shadow:0 0 0 1px rgba(0,240,255,0.3), 0 12px 40px rgba(0,240,255,0.18);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px rgba(0,240,255,0.5), 0 16px 46px rgba(0,240,255,0.28); }
+  .btn:active{ transform:translateY(0px) scale(0.98); }
+
+  .statline{
+    font-family:'JetBrains Mono', monospace;
+    display:flex;
+    gap:28px;
+    font-size:13px;
+    color:#9a9aad;
+    margin-top:2px;
+  }
+  .statline b{ color:var(--ghost); font-size:22px; display:block; font-weight:700; }
+  .statline span{ display:block; margin-top:2px; }
+
+  .code-row{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .code-input{
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    padding:10px 16px;
+    border-radius:100px;
+    border:1px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.04);
+    color:var(--ghost);
+    outline:none;
+    text-align:center;
+    letter-spacing:0.04em;
+    width:180px;
+  }
+  .code-input::placeholder{ color:#66667a; }
+  .code-input:focus{ border-color:var(--cyan); }
+  .code-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight:500;
+    padding:10px 18px;
+    border-radius:100px;
+    border:1px solid rgba(0,240,255,0.35);
+    background:rgba(0,240,255,0.08);
+    color:var(--cyan);
+    cursor:pointer;
+  }
+  .code-btn:hover{ background:rgba(0,240,255,0.15); }
+  .code-msg{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:#7a7a90;
+    min-height:14px;
+    margin-top:2px;
+  }
+  .code-msg.active{ color:var(--amber); }
+  .code-msg.error{ color:var(--danger); }
+
+  #cheatBadge{
+    position:fixed;
+    bottom:22px; left:50%;
+    transform:translateX(-50%);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.2em;
+    color:var(--amber);
+    z-index:5;
+    pointer-events:none;
+    text-shadow:0 0 12px rgba(255,194,51,0.6);
+  }
+
+  #hud{
+    position:fixed; top:0; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:20px 26px;
+    z-index:5;
+    pointer-events:none;
+    font-family:'JetBrains Mono', monospace;
+  }
+  #hud .block{ display:flex; flex-direction:column; gap:2px; }
+  #hud .label{ font-size:10px; letter-spacing:0.25em; text-transform:uppercase; color:#7a7a90; }
+  #hud .value{ font-size:26px; font-weight:700; color:var(--ghost); }
+  #hud .value.combo{ color:var(--amber); }
+  #hud .value.level{ color:var(--magenta); text-align:right; }
+  #hud .right{ align-items:flex-end; }
+
+  #flash{
+    position:fixed; inset:0; background:var(--danger);
+    opacity:0; pointer-events:none; z-index:6; mix-blend-mode:screen;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+<div id="flash"></div>
+
+<div id="hud" class="hidden">
+  <div class="block">
+    <span class="label">Score</span>
+    <span class="value" id="scoreVal">0</span>
+  </div>
+  <div class="block right">
+    <span class="label">Level</span>
+    <span class="value level" id="levelVal">1</span>
+  </div>
+</div>
+<div id="hud2" style="position:fixed; top:78px; left:26px; z-index:5; pointer-events:none; font-family:'JetBrains Mono', monospace;" class="hidden">
+  <span style="font-size:10px; letter-spacing:0.25em; text-transform:uppercase; color:#7a7a90;">Combo</span>
+  <div class="value combo" id="comboVal" style="font-size:22px; font-weight:700;">x1.0</div>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="eyebrow">Reflex Arcade</div>
+  <div class="title">DRIFTLINE</div>
+  <div class="subtitle">Steer the light particle. Dodge the shapes, collect amber orbs, and graze past danger to build your combo. Difficulty ramps up every second — get ready.</div>
+  <div class="rules">
+    <div class="pill"><span class="dot" style="background:var(--cyan)"></span>WASD / Arrow keys / Drag</div>
+    <div class="pill"><span class="dot" style="background:var(--magenta)"></span>Touch a shape = game over</div>
+    <div class="pill"><span class="dot" style="background:var(--amber)"></span>Collect orb = score + combo</div>
+    <div class="pill"><span class="dot" style="background:var(--ghost)"></span>White hexagon = 2s shield</div>
+  </div>
+  <div class="code-row">
+    <input type="text" id="codeInput" class="code-input" placeholder="CODE" maxlength="24">
+    <button class="code-btn" id="codeBtn">APPLY</button>
+  </div>
+  <div class="code-msg" id="codeMsg"></div>
+  <button class="btn" id="startBtn">START</button>
+</div>
+
+<div id="cheatBadge" class="hidden">CODE ACTIVE — INVINCIBILITY</div>
+
+<div class="overlay hidden" id="overScreen">
+  <div class="eyebrow" style="color:var(--danger)">You crashed</div>
+  <div class="title" style="font-size:clamp(34px,7vw,58px)">RUN OVER</div>
+  <div class="statline">
+    <div>
+      <b id="finalScore">0</b>
+      <span>Score</span>
+    </div>
+    <div>
+      <b id="bestScore">0</b>
+      <span>Best (this session)</span>
+    </div>
+    <div>
+      <b id="finalLevel">1</b>
+      <span>Level reached</span>
+    </div>
+  </div>
+  <button class="btn" id="retryBtn">RETRY</button>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  let W, H, DPR;
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---------- state ----------
+  let state = 'start'; // start | playing | over
+  let best = 0;
+
+  const startScreen = document.getElementById('startScreen');
+  const overScreen = document.getElementById('overScreen');
+  const hud = document.getElementById('hud');
+  const hud2 = document.getElementById('hud2');
+  const scoreVal = document.getElementById('scoreVal');
+  const levelVal = document.getElementById('levelVal');
+  const comboVal = document.getElementById('comboVal');
+  const flashEl = document.getElementById('flash');
+  const cheatBadge = document.getElementById('cheatBadge');
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('retryBtn').addEventListener('click', startGame);
+
+  // ---------- cheat code ----------
+  const CHEAT_CODE = 'rafus2014';
+  let cheatActive = false;
+  const codeInput = document.getElementById('codeInput');
+  const codeBtn = document.getElementById('codeBtn');
+  const codeMsg = document.getElementById('codeMsg');
+
+  function applyCode(){
+    const val = codeInput.value.trim().toLowerCase();
+    if(!val) return;
+    if(val === CHEAT_CODE){
+      cheatActive = true;
+      codeMsg.textContent = 'Code active — invincibility enabled.';
+      codeMsg.classList.remove('error');
+      codeMsg.classList.add('active');
+    } else {
+      codeMsg.textContent = 'Invalid code.';
+      codeMsg.classList.remove('active');
+      codeMsg.classList.add('error');
+    }
+  }
+  codeBtn.addEventListener('click', applyCode);
+  codeInput.addEventListener('keydown', e=>{ if(e.key==='Enter') applyCode(); });
+
+  // ---------- input ----------
+  const keys = {};
+  window.addEventListener('keydown', e=>{
+    keys[e.key.toLowerCase()] = true;
+    if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault();
+  });
+  window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+
+  let pointerActive = false, pointerX = 0, pointerY = 0;
+  canvas.addEventListener('pointerdown', e=>{ pointerActive = true; pointerX = e.clientX; pointerY = e.clientY; });
+  window.addEventListener('pointermove', e=>{ if(pointerActive){ pointerX = e.clientX; pointerY = e.clientY; } });
+  window.addEventListener('pointerup', ()=>{ pointerActive = false; });
+
+  // ---------- entities ----------
+  let player, obstacles, particles, pickups, elapsed, score, combo, comboTimer, level, shieldTime, screenShake, spawnTimer, pickupTimer, powerTimer, bgOffset;
+
+  function resetGame(){
+    player = { x: W/2, y: H/2, vx:0, vy:0, r:9, trail:[] };
+    obstacles = [];
+    particles = [];
+    pickups = [];
+    elapsed = 0;
+    score = 0;
+    combo = 1;
+    comboTimer = 0;
+    level = 1;
+    shieldTime = 0;
+    screenShake = 0;
+    spawnTimer = 0;
+    pickupTimer = 2;
+    powerTimer = 9;
+    bgOffset = 0;
+  }
+
+  function startGame(){
+    resetGame();
+    state = 'playing';
+    startScreen.classList.add('hidden');
+    overScreen.classList.add('hidden');
+    hud.classList.remove('hidden');
+    hud2.classList.remove('hidden');
+    if(cheatActive) cheatBadge.classList.remove('hidden'); else cheatBadge.classList.add('hidden');
+    last = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function endGame(){
+    state = 'over';
+    hud.classList.add('hidden');
+    hud2.classList.add('hidden');
+    cheatBadge.classList.add('hidden');
+    best = Math.max(best, Math.floor(score));
+    document.getElementById('finalScore').textContent = Math.floor(score);
+    document.getElementById('bestScore').textContent = best;
+    document.getElementById('finalLevel').textContent = level;
+    overScreen.classList.remove('hidden');
+    flashEl.style.transition = 'none';
+    flashEl.style.opacity = '0.55';
+    requestAnimationFrame(()=>{
+      flashEl.style.transition = 'opacity .5s ease';
+      flashEl.style.opacity = '0';
+    });
+  }
+
+  // ---------- helpers ----------
+  function rand(a,b){ return a + Math.random()*(b-a); }
+  function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2, y1-y2); }
+
+  function spawnObstacle(){
+    const edge = Math.floor(rand(0,4));
+    const fast = Math.random() < 0.5;
+    const r = fast ? rand(7,11) : rand(15,24);
+    const speedBase = fast ? rand(160,220) : rand(70,120);
+    const diffMult = 1 + Math.min(elapsed/55, 2.4);
+    const speed = speedBase * diffMult;
+    let x,y;
+    const margin = 40;
+    if(edge===0){ x = rand(0,W); y = -margin; }
+    else if(edge===1){ x = W+margin; y = rand(0,H); }
+    else if(edge===2){ x = rand(0,W); y = H+margin; }
+    else { x = -margin; y = rand(0,H); }
+
+    const targetX = rand(W*0.2, W*0.8);
+    const targetY = rand(H*0.2, H*0.8);
+    const ang = Math.atan2(targetY-y, targetX-x) + rand(-0.35,0.35);
+
+    obstacles.push({
+      x, y, r,
+      vx: Math.cos(ang)*speed,
+      vy: Math.sin(ang)*speed,
+      shape: fast ? 'tri' : 'sq',
+      rot: rand(0, Math.PI*2),
+      rotSpeed: rand(-2,2),
+      grazed:false,
+      hue: fast ? 'magenta' : 'amber2'
+    });
+  }
+
+  function spawnPickup(){
+    pickups.push({
+      x: rand(W*0.12, W*0.88),
+      y: rand(H*0.15, H*0.85),
+      r: 7,
+      pulse: Math.random()*Math.PI*2,
+      type: 'score'
+    });
+  }
+
+  function spawnPower(){
+    pickups.push({
+      x: rand(W*0.15, W*0.85),
+      y: rand(H*0.2, H*0.8),
+      r: 10,
+      pulse: Math.random()*Math.PI*2,
+      type: 'shield'
+    });
+  }
+
+  function burst(x,y,color,n){
+    for(let i=0;i<n;i++){
+      const a = rand(0,Math.PI*2), sp = rand(40,260);
+      particles.push({ x,y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life: rand(0.3,0.7), maxLife: 0.7, color });
+    }
+  }
+
+  // ---------- update ----------
+  let last = performance.now();
+  function update(dt){
+    elapsed += dt;
+    level = 1 + Math.floor(elapsed/12);
+
+    // input -> acceleration
+    const accel = 900;
+    let ax=0, ay=0;
+    if(keys['w']||keys['arrowup']) ay -= 1;
+    if(keys['s']||keys['arrowdown']) ay += 1;
+    if(keys['a']||keys['arrowleft']) ax -= 1;
+    if(keys['d']||keys['arrowright']) ax += 1;
+
+    if(pointerActive){
+      const dx = pointerX-player.x, dy = pointerY-player.y;
+      const d = Math.hypot(dx,dy);
+      if(d>4){ ax += dx/d; ay += dy/d; }
+    }
+
+    const mag = Math.hypot(ax,ay);
+    if(mag>0){ ax = ax/mag; ay = ay/mag; }
+    player.vx += ax*accel*dt;
+    player.vy += ay*accel*dt;
+
+    // friction
+    const fr = Math.exp(-dt*4.2);
+    player.vx *= fr; player.vy *= fr;
+
+    // cap speed
+    const maxSpeed = 480;
+    const sp = Math.hypot(player.vx, player.vy);
+    if(sp > maxSpeed){ player.vx = player.vx/sp*maxSpeed; player.vy = player.vy/sp*maxSpeed; }
+
+    player.x += player.vx*dt;
+    player.y += player.vy*dt;
+    player.x = Math.max(player.r+4, Math.min(W-player.r-4, player.x));
+    player.y = Math.max(player.r+4, Math.min(H-player.r-4, player.y));
+
+    player.trail.unshift({x:player.x, y:player.y});
+    if(player.trail.length > 22) player.trail.pop();
+
+    // combo decay
+    comboTimer -= dt;
+    if(comboTimer <= 0 && combo > 1){
+      combo = Math.max(1, combo - dt*0.6);
+    }
+
+    // shield
+    if(shieldTime > 0) shieldTime -= dt;
+
+    // score accrues with time * combo
+    score += dt * 8 * combo;
+
+    // spawn obstacles, ramp rate
+    spawnTimer -= dt;
+    const interval = Math.max(0.22, 0.85 - elapsed*0.011);
+    if(spawnTimer <= 0){
+      spawnObstacle();
+      if(elapsed > 25 && Math.random() < 0.35) spawnObstacle();
+      if(elapsed > 50 && Math.random() < 0.25) spawnObstacle();
+      spawnTimer = interval;
+    }
+
+    // pickups
+    pickupTimer -= dt;
+    if(pickupTimer <= 0){ spawnPickup(); pickupTimer = rand(2.2,3.4); }
+    powerTimer -= dt;
+    if(powerTimer <= 0){ spawnPower(); powerTimer = rand(13,19); }
+
+    // update obstacles
+    const margin = 60;
+    for(let i=obstacles.length-1;i>=0;i--){
+      const o = obstacles[i];
+      o.x += o.vx*dt; o.y += o.vy*dt;
+      o.rot += o.rotSpeed*dt;
+      if(o.x < -margin*2 || o.x > W+margin*2 || o.y < -margin*2 || o.y > H+margin*2){
+        obstacles.splice(i,1); continue;
+      }
+      const d = dist(player.x,player.y,o.x,o.y);
+      const hitDist = player.r + o.r*0.82;
+      const grazeDist = player.r + o.r + 26;
+
+      if(d < hitDist){
+        if(cheatActive){
+          // ghost mode: pass straight through, no destruction, no shake
+        } else if(shieldTime > 0){
+          burst(o.x,o.y, '#ffffff', 18);
+          score += 40;
+          obstacles.splice(i,1);
+          screenShake = Math.max(screenShake, 6);
+          continue;
+        } else {
+          burst(player.x, player.y, '#ff3b4e', 30);
+          screenShake = 18;
+          endGame();
+          return;
+        }
+      } else if(!o.grazed && d < grazeDist){
+        o.grazed = true;
+        combo = Math.min(9.9, combo + 0.35);
+        comboTimer = 2.2;
+        score += 12 * combo;
+        burst((player.x+o.x)/2, (player.y+o.y)/2, '#00f0ff', 6);
+      }
+    }
+
+    // update pickups
+    for(let i=pickups.length-1;i>=0;i--){
+      const p = pickups[i];
+      p.pulse += dt*4;
+      const d = dist(player.x,player.y,p.x,p.y);
+      if(d < player.r + p.r){
+        if(p.type==='score'){
+          score += 55 * combo;
+          combo = Math.min(9.9, combo + 0.5);
+          comboTimer = 2.5;
+          burst(p.x,p.y, '#ffc233', 16);
+        } else {
+          shieldTime = 2.2;
+          burst(p.x,p.y, '#ffffff', 22);
+        }
+        pickups.splice(i,1);
+      }
+    }
+
+    // particles
+    for(let i=particles.length-1;i>=0;i--){
+      const pt = particles[i];
+      pt.life -= dt;
+      if(pt.life<=0){ particles.splice(i,1); continue; }
+      pt.x += pt.vx*dt; pt.y += pt.vy*dt;
+      pt.vx *= Math.exp(-dt*2.2); pt.vy *= Math.exp(-dt*2.2);
+    }
+
+    if(screenShake>0) screenShake = Math.max(0, screenShake - dt*40);
+
+    bgOffset += (Math.hypot(player.vx,player.vy)*0.02)*dt*60;
+
+    // HUD
+    scoreVal.textContent = Math.floor(score);
+    levelVal.textContent = level;
+    comboVal.textContent = 'x' + combo.toFixed(1);
+  }
+
+  // ---------- draw ----------
+  function drawGrid(){
+    ctx.save();
+    const spacing = 46;
+    ctx.strokeStyle = 'rgba(0,240,255,0.055)';
+    ctx.lineWidth = 1;
+    const offset = bgOffset % spacing;
+    for(let x = -spacing; x < W+spacing; x += spacing){
+      ctx.beginPath();
+      ctx.moveTo(x+offset, 0); ctx.lineTo(x+offset, H);
+      ctx.stroke();
+    }
+    for(let y = -spacing; y < H+spacing; y += spacing){
+      ctx.beginPath();
+      ctx.moveTo(0, y+offset); ctx.lineTo(W, y+offset);
+      ctx.stroke();
+    }
+    const grad = ctx.createRadialGradient(W/2,H/2,0, W/2,H/2, Math.max(W,H)*0.7);
+    grad.addColorStop(0,'rgba(10,10,18,0)');
+    grad.addColorStop(1,'rgba(10,10,18,0.85)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+
+  function drawPlayer(){
+    // trail — color shifts toward amber as combo builds
+    const t = Math.min(1, (combo-1)/6);
+    const trailColor = lerpColor([0,240,255], [255,194,51], t);
+    for(let i=0;i<player.trail.length;i++){
+      const p = player.trail[i];
+      const a = (1 - i/player.trail.length) * 0.35;
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(${trailColor.join(',')},${a})`;
+      ctx.arc(p.x,p.y, player.r*(1 - i/player.trail.length*0.6), 0, Math.PI*2);
+      ctx.fill();
+    }
+    if(shieldTime > 0 || cheatActive){
+      ctx.save();
+      ctx.strokeStyle = `rgba(255,255,255,${0.5 + Math.sin(elapsed*14)*0.3})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.r+9, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.globalAlpha = cheatActive ? 0.6 : 1;
+    ctx.shadowColor = `rgb(${trailColor.join(',')})`;
+    ctx.shadowBlur = 22;
+    ctx.fillStyle = `rgb(${trailColor.join(',')})`;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function lerpColor(a,b,t){
+    return [
+      Math.round(a[0]+(b[0]-a[0])*t),
+      Math.round(a[1]+(b[1]-a[1])*t),
+      Math.round(a[2]+(b[2]-a[2])*t)
+    ];
+  }
+
+  function drawObstacles(){
+    for(const o of obstacles){
+      ctx.save();
+      ctx.translate(o.x,o.y);
+      ctx.rotate(o.rot);
+      const color = o.shape==='tri' ? '#ff2e92' : '#ff8a3d';
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 16;
+      ctx.fillStyle = color;
+      if(o.shape==='tri'){
+        ctx.beginPath();
+        ctx.moveTo(0,-o.r);
+        ctx.lineTo(o.r*0.87, o.r*0.6);
+        ctx.lineTo(-o.r*0.87, o.r*0.6);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillRect(-o.r*0.75,-o.r*0.75,o.r*1.5,o.r*1.5);
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawPickups(){
+    for(const p of pickups){
+      const pulse = 1 + Math.sin(p.pulse)*0.18;
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      if(p.type==='score'){
+        ctx.shadowColor = '#ffc233'; ctx.shadowBlur = 18;
+        ctx.fillStyle = '#ffc233';
+        ctx.beginPath();
+        ctx.arc(0,0,p.r*pulse,0,Math.PI*2);
+        ctx.fill();
+      } else {
+        ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 22;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        for(let i=0;i<6;i++){
+          const a = i/6*Math.PI*2;
+          const px = Math.cos(a)*p.r*pulse, py = Math.sin(a)*p.r*pulse;
+          i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawParticles(){
+    for(const pt of particles){
+      const a = pt.life/pt.maxLife;
+      ctx.beginPath();
+      ctx.fillStyle = pt.color.startsWith('#') ? hexToRgba(pt.color,a) : pt.color;
+      ctx.arc(pt.x,pt.y, 3*a+0.5, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  function hexToRgba(hex,a){
+    const n = parseInt(hex.slice(1),16);
+    const r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    if(screenShake > 0){
+      ctx.translate(rand(-screenShake,screenShake), rand(-screenShake,screenShake));
+    }
+    drawGrid();
+    drawParticles();
+    drawPickups();
+    drawObstacles();
+    drawPlayer();
+    ctx.restore();
+  }
+
+  function loop(now){
+    if(state !== 'playing') return;
+    const dt = Math.min(0.033, (now-last)/1000);
+    last = now;
+    update(dt);
+    if(state==='playing') render();
+    requestAnimationFrame(loop);
+  }
+
+  // idle background animation on start screen
+  function idleRender(now){
+    if(state==='start' || state==='over'){
+      ctx.clearRect(0,0,W,H);
+      bgOffset += 0.25;
+      drawGrid();
+    }
+    requestAnimationFrame(idleRender);
+  }
+  requestAnimationFrame(idleRender);
+
+})();
+</script>
+</body>
+</html>
